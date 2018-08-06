@@ -1,5 +1,6 @@
 package dynacode;
 
+import java.io.IOException;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -22,6 +23,7 @@ import javax.tools.ToolProvider;
  * A wrapper to ease the use of jdk.compiler.Main.
  * 
  * @author liyang
+ * @author wwright update openjdk 1.8 2018.8.4
  */
 public final class Javac {
 
@@ -46,28 +48,14 @@ public final class Javac {
 	 */
 	public String compile(String srcFiles[]) {
 		StringWriter err = new StringWriter();
-		PrintWriter errPrinter = new PrintWriter(err);
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
-		
 		Iterable<String> args = buildJavacArgs();
 		StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
-
-//        // This sets up the class path that the compiler will use.
-//        // I've added the .jar file that contains the DoStuff interface within in it...
-//        List<String> optionList = new ArrayList<String>();
-//        optionList.add("-classpath");
-//        optionList.add(System.getProperty("java.class.path") + ";dist/InlineCompiler.jar");
-
-//        Iterable<? extends JavaFileObject> compilationUnit = fileManager.getJavaFileObjectsFromFiles(Arrays.asList(helloWorldJava));
-        Iterable<? extends JavaFileObject> compilationUnit = fileManager.getJavaFileObjects(srcFiles);
-
+        Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(srcFiles);
         JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, 
-        							args, null, compilationUnit);
-        
-//		int resultCode = compiler(args, errPrinter);
+        							args, null, compilationUnits);
         int resultCode = 0;
-
         if (task.call()) {
             System.out.println("Yipe");
         } else {
@@ -78,7 +66,13 @@ public final class Javac {
                         diagnostic.getSource().toUri());
             }
         }
-		errPrinter.close();
+        try {
+            fileManager.close();
+        } 
+        catch (IOException e) {
+            System.err.println("Caught IOException: " + e.getMessage());
+        }
+
 		return (resultCode == 0) ? null : err.toString();
 	}
 

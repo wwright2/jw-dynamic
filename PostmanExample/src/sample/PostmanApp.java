@@ -15,6 +15,8 @@ public class PostmanApp {
 		while (true) {
 			System.out.print("Enter a message: ");
 			String msg = sysin.readLine();
+			if (msg.matches("^[qQ]"))
+			    break ;
 
 			postman.deliverMessage(msg);
 		}
